@@ -1,12 +1,13 @@
 package com.celeryman.item.custom;
 
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class PeteStickItem extends Item {
@@ -15,19 +16,31 @@ public class PeteStickItem extends Item {
     }
 
     @Override
-    public ActionResult use(World world, PlayerEntity user, Hand hand) {
-        // Ensure we don't spawn the lightning only on the client.
-        // This is to prevent desync.
-        if (world.isClient) {
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        World world = context.getWorld();
+        BlockPos blockPos = context.getBlockPos();
+
+        if (world.isClient()) {
             return ActionResult.PASS;
         }
-
-        BlockPos frontOfPlayer = user.getBlockPos().offset(user.getHorizontalFacing(), 10);
-
-        // Spawn the lightning bolt.
         LightningEntity lightningBolt = new LightningEntity(EntityType.LIGHTNING_BOLT, world);
-        lightningBolt.setPosition(frontOfPlayer.toCenterPos());
+        lightningBolt.setPosition(Vec3d.of(blockPos));
         world.spawnEntity(lightningBolt);
+
+        BlockPos platformStartBlock = new BlockPos(blockPos.getX()-1, blockPos.getY(), blockPos.getZ()-1);
+
+        //Remember (X, Y, Z). Y is UP in Minecraft.
+        for (int xOffset = 0; xOffset < 3; xOffset++) {
+            for (int zOffset = 0; zOffset < 3; zOffset++) {
+                world.setBlockState(
+                        new BlockPos(
+                                platformStartBlock.getX()+xOffset,
+                                platformStartBlock.getY(),
+                                platformStartBlock.getZ()+zOffset),
+                        Blocks.NETHERITE_BLOCK.getDefaultState()
+                );
+            }
+        }
 
         return ActionResult.SUCCESS;
     }
